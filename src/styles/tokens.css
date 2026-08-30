@@ -1,0 +1,19 @@
+:root {
+  --color-bg: #f7f5f0;
+  --color-surface: #fffdfa;
+  --color-ink: #1a1917;
+  --color-muted: #6f6b63;
+  --color-border: #ded9cf;
+  --color-sand: #e9e1d4;
+  --color-success: #35654d;
+  --color-danger: #a33a32;
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: Inter, system-ui, sans-serif;
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --container: 75rem;
+  --shadow-sm: 0 0.4rem 1.5rem rgb(26 25 23 / 7%);
+  --shadow-md: 0 1rem 3rem rgb(26 25 23 / 10%);
+  --transition: 180ms ease;
+}
