@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Menu, ShoppingBag, X } from "@lucide/vue";
+import { Menu, ShoppingCart, X } from "@lucide/vue";
 import { ref } from "vue";
 import { useCartStore } from "../stores/cart";
 
@@ -10,9 +10,20 @@ const cart = useCartStore();
 <template>
   <header class="site-header">
     <div class="container site-header__inner">
-      <RouterLink class="site-header__brand" to="/" @click="menuOpen = false"
-        >Curio</RouterLink
+      <RouterLink
+        class="site-header__brand"
+        to="/"
+        aria-label="Curio 購物網站首頁"
+        @click="menuOpen = false"
       >
+        <img
+          class="site-header__brand-logo"
+          src="/curio-logo.png"
+          alt=""
+          width="404"
+          height="156"
+        />
+      </RouterLink>
       <button
         class="site-header__menu"
         type="button"
@@ -40,7 +51,7 @@ const cart = useCartStore();
         to="/cart"
         :aria-label="`購物車，目前 ${cart.itemCount} 件商品`"
       >
-        <ShoppingBag aria-hidden="true" :size="19" />
+        <ShoppingCart aria-hidden="true" :size="19" :stroke-width="1.9" />
         <span>購物車</span>
         <span class="site-header__count" aria-hidden="true">{{
           cart.itemCount
@@ -67,13 +78,25 @@ const cart = useCartStore();
   gap: 0.75rem;
 }
 .site-header__brand {
+  width: max-content;
   min-height: 2.75rem;
   display: inline-flex;
   align-items: center;
-  font-family: var(--font-display);
-  font-size: 1.65rem;
-  font-weight: 700;
-  letter-spacing: -0.04em;
+  border-radius: var(--radius-sm);
+}
+.site-header__brand-logo {
+  width: auto;
+  height: 2.5rem;
+  display: block;
+  transition: opacity var(--transition);
+}
+.site-header__brand:hover .site-header__brand-logo,
+.site-header__brand:active .site-header__brand-logo {
+  opacity: 0.72;
+}
+.site-header__brand:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
 }
 .site-header__menu {
   width: 2.75rem;
@@ -140,6 +163,9 @@ const cart = useCartStore();
   .site-header__nav {
     display: flex;
     gap: 0.25rem;
+  }
+  .site-header__brand-logo {
+    height: 2.75rem;
   }
   .site-header__cart {
     justify-self: end;
