@@ -8,7 +8,7 @@ export async function queryProducts(
   filters: ProductFilters,
 ): Promise<CatalogResult> {
   await wait();
-  return applyCatalogQuery(structuredClone(products), filters);
+  return applyCatalogQuery(products, filters);
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {

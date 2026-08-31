@@ -1,13 +1,15 @@
 export type PaymentMethod = "cod" | "online";
 
+/** 結帳表單尚未驗證的輸入資料；payment 未選擇時為空字串。 */
 export type CheckoutDetails = {
   name: string;
   email: string;
   phone: string;
   address: string;
-  payment: PaymentMethod | "" | (string & {});
+  payment: PaymentMethod | "";
 };
 
+/** 以欄位名稱為鍵的錯誤集合；空物件表示所有欄位皆通過驗證。 */
 export type CheckoutErrors = Partial<Record<keyof CheckoutDetails, string>>;
 
 export type OrderDetails = Omit<CheckoutDetails, "payment"> & {
@@ -24,6 +26,7 @@ export type OrderLine = {
   selectedOptions: Record<string, string>;
 };
 
+/** 儲存在 sessionStorage 的訂單快照，用於付款完成頁重新載入後顯示。 */
 export type OrderSnapshot = {
   orderNumber: string;
   items: OrderLine[];
@@ -31,6 +34,10 @@ export type OrderSnapshot = {
   details: OrderDetails;
 };
 
+/**
+ * 驗證結帳欄位並回傳各欄位錯誤。
+ * 電話會先移除空白與連字號，再檢查是否為 8～15 位數字。
+ */
 export const validateCheckout = (details: CheckoutDetails): CheckoutErrors => {
   const errors: CheckoutErrors = {};
   if (!details.name.trim()) errors.name = "請輸入收件人姓名";
@@ -44,16 +51,20 @@ export const validateCheckout = (details: CheckoutDetails): CheckoutErrors => {
   return errors;
 };
 
-export const createOrderNumber = (
-  date = new Date(),
-  random = () => Math.floor(Math.random() * 10_000),
-) => {
-  const day = [date.getFullYear(), date.getMonth() + 1, date.getDate()]
-    .map((part, index) => (index ? String(part).padStart(2, "0") : part))
-    .join("");
-  return `CR-${day}-${String(random()).padStart(4, "0").slice(-4)}`;
+/** 建立「CR-YYYYMMDD-####」格式的前端展示用訂單編號。 */
+export const createOrderNumber = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const sequence = String(Math.floor(Math.random() * 10_000)).padStart(4, "0");
+
+  return `CR-${year}${month}${day}-${sequence}`;
 };
 
+/**
+ * 解析並驗證外部儲存的訂單快照；格式錯誤、欄位缺漏或總額不符時回傳 null。
+ */
 export const readOrderSnapshot = (
   stored: string | null,
 ): OrderSnapshot | null => {
@@ -87,6 +98,7 @@ export const readOrderSnapshot = (
   }
 };
 
+// JSON.parse 的結果屬於 unknown，以下型別守衛會逐層確認資料結構後才交給畫面使用。
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 

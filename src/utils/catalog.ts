@@ -5,9 +5,11 @@ import type {
   ProductOption,
 } from "../types/commerce";
 
+// Vue Router 的查詢參數可能是單值或陣列；陣列情況統一採用第一個值。
 const queryValue = (value: unknown) =>
   Array.isArray(value) ? value[0] : value;
 
+// 空值與非有限數字都視為未設定，避免無效價格條件進入篩選流程。
 const optionalNumber = (value: unknown) => {
   const raw = queryValue(value);
   if (raw === undefined || raw === null || raw === "") return undefined;
@@ -15,6 +17,10 @@ const optionalNumber = (value: unknown) => {
   return Number.isFinite(number) ? number : undefined;
 };
 
+/**
+ * 將網址查詢參數轉成可直接使用的商品篩選條件。
+ * 未知排序回退為最新上架，頁碼最低為 1，每頁固定顯示 12 件。
+ */
 export function parseCatalogQuery(
   query: Record<string, unknown>,
 ): ProductFilters {
@@ -35,6 +41,7 @@ export function parseCatalogQuery(
   };
 }
 
+/** 回傳尚未選擇的必選規格名稱，空陣列表示商品規格已選完整。 */
 export const missingOptionNames = (
   options: ProductOption[],
   selectedOptions: Record<string, string>,
@@ -43,6 +50,9 @@ export const missingOptionNames = (
     .filter((option) => !selectedOptions[option.name])
     .map((option) => option.name);
 
+/**
+ * 套用啟用狀態、關鍵字、分類、價格、排序與分頁，回傳目前頁面的商品及總頁數。
+ */
 export function applyCatalogQuery(
   products: Product[],
   filters: ProductFilters,
@@ -66,25 +76,21 @@ export function applyCatalogQuery(
       (product) =>
         filters.maxPrice === undefined || product.price <= filters.maxPrice,
     )
-    .map((product, index) => ({ product, index }))
-    .sort((a, b) => {
-      const difference =
-        filters.sort === "newest"
-          ? b.product.createdAt.localeCompare(a.product.createdAt)
-          : filters.sort === "price-asc"
-            ? a.product.price - b.product.price
-            : b.product.price - a.product.price;
-      return difference || a.index - b.index;
-    });
+    .sort((a, b) =>
+      filters.sort === "newest"
+        ? b.createdAt.localeCompare(a.createdAt)
+        : filters.sort === "price-asc"
+          ? a.price - b.price
+          : b.price - a.price,
+    );
 
+  // 先以完整結果計算頁數，再只擷取目前頁面的資料。
   const total = matching.length;
   const totalPages = Math.max(1, Math.ceil(total / filters.pageSize));
   const start = (filters.page - 1) * filters.pageSize;
 
   return {
-    items: matching
-      .slice(start, start + filters.pageSize)
-      .map(({ product }) => product),
+    items: matching.slice(start, start + filters.pageSize),
     total,
     totalPages,
   };
