@@ -1,3 +1,4 @@
+<!-- 驗證並顯示本次訂單摘要 -->
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRoute } from "vue-router";
@@ -40,36 +41,39 @@ const order = computed(() =>
         <p>訂單已送出</p>
         <h1 id="order-success-title">謝謝您的選購</h1>
         <p>
-          示範訂單編號：<strong>{{ order.orderNumber }}</strong>
+          示範訂單編號：
+          <strong>{{ order.orderNumber }}</strong>
         </p>
         <div class="order-success__details">
           <section aria-labelledby="order-lines-title">
             <h2 id="order-lines-title">本次購買項目</h2>
             <ul>
               <li v-for="line in order.items" :key="line.lineId">
-                <span
-                  ><strong>{{ line.name }}</strong
-                  ><small v-if="Object.keys(line.selectedOptions).length">{{
-                    Object.entries(line.selectedOptions)
-                      .map(([name, value]) => `${name}：${value}`)
-                      .join("、")
-                  }}</small></span
-                >
-                <span
-                  >{{ line.quantity }} 件 ·
-                  {{ formatCurrency(line.unitPrice * line.quantity) }}</span
-                >
+                <span>
+                  <strong>{{ line.name }}</strong>
+                  <small v-if="Object.keys(line.selectedOptions).length">
+                    {{
+                      Object.entries(line.selectedOptions)
+                        .map(([name, value]) => `${name}：${value}`)
+                        .join("、")
+                    }}
+                  </small>
+                </span>
+                <span>
+                  {{ line.quantity }} 件 ·
+                  {{ formatCurrency(line.unitPrice * line.quantity) }}
+                </span>
               </li>
             </ul>
           </section>
           <aside aria-label="訂單金額">
-            <span>商品小計</span
-            ><strong>{{ formatCurrency(order.subtotal) }}</strong>
+            <span>商品小計</span>
+            <strong>{{ formatCurrency(order.subtotal) }}</strong>
           </aside>
         </div>
         <nav aria-label="下一步">
-          <RouterLink to="/">返回首頁</RouterLink
-          ><RouterLink to="/products">繼續購物</RouterLink>
+          <RouterLink to="/">返回首頁</RouterLink>
+          <RouterLink to="/products">繼續購物</RouterLink>
         </nav>
       </section>
     </div>
@@ -84,10 +88,10 @@ const order = computed(() =>
 .order-success__safe-state {
   max-width: 48rem;
   margin-inline: auto;
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   padding: clamp(1.5rem, 5vw, 3rem);
   background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
 }
 .order-success__summary > p:first-child,
 .order-success__safe-state > p:first-child {
@@ -104,8 +108,8 @@ h2 {
 }
 h1 {
   margin: 0.35rem 0 1rem;
-  font-size: clamp(2.5rem, 7vw, 4.5rem);
-  line-height: 1;
+  font-size: clamp(1.75rem, 5vw, 3rem);
+  line-height: 1.3;
 }
 .order-success__summary > p:not(:first-child),
 .order-success__safe-state > p:not(:first-child) {
@@ -136,9 +140,14 @@ h1 {
 }
 .order-success__details li {
   display: flex;
+  flex-wrap: wrap;
   align-items: start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.35rem 1rem;
+}
+.order-success__details li > span:first-child {
+  flex: 1 1 10rem;
+  overflow-wrap: anywhere;
 }
 .order-success__details li > span {
   display: grid;

@@ -15,6 +15,7 @@ import type { Product } from "../types/commerce";
 export const products: Product[] = [
   {
     id: "aura-headphones",
+    // 網址中的名稱
     slug: "aura-headphones",
     name: "Aura 無線耳機",
     brand: "Aster",
@@ -26,7 +27,9 @@ export const products: Product[] = [
     images: [auraHeadphones],
     options: [{ name: "顏色", values: ["曜石黑"] }],
     tags: ["新品"],
+    // 是否為首頁商品
     featured: true,
+    // 是否上架販售
     active: true,
     createdAt: "2026-08-07",
   },

@@ -1,5 +1,7 @@
+<!-- 主入口 -->
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import haloLamp from "../assets/products/halo-lamp.png";
 import ProductCard from "../components/ProductCard.vue";
 import ProductGridSkeleton from "../components/ProductGridSkeleton.vue";
 import { queryProducts } from "../services/productService";
@@ -14,6 +16,7 @@ const categories = [
 const products = ref<Product[]>([]);
 const loading = ref(true);
 const failed = ref(false);
+// 精選商品 只顯示前四件，避免首頁過長；最新上架則直接取前四件。
 const featured = computed(() =>
   products.value.filter((product) => product.featured).slice(0, 4),
 );
@@ -23,15 +26,14 @@ async function loadProducts() {
   loading.value = true;
   failed.value = false;
   try {
-    products.value = (
-      await queryProducts({
-        search: "",
-        category: "",
-        sort: "newest",
-        page: 1,
-        pageSize: 12,
-      })
-    ).items;
+    const result = await queryProducts({
+      search: "",
+      category: "",
+      sort: "newest",
+      page: 1,
+      pageSize: 12,
+    });
+    products.value = result.items;
   } catch {
     failed.value = true;
   } finally {
@@ -45,31 +47,49 @@ loadProducts();
 <template>
   <main>
     <section class="home-hero">
-      <div class="container home-hero__content">
-        <p>Curio / selected objects</p>
-        <h1>把日常，留給真正想一起生活的物件。</h1>
-        <span>跨越品類的選物，為每個平凡時刻保留一點質感與餘裕。</span
-        ><RouterLink to="/products">探索全部商品</RouterLink>
+      <div class="container home-hero__layout">
+        <div class="home-hero__content">
+          <p class="home-hero__eyebrow">Curio 日常選物</p>
+          <h1>好用，也喜歡。</h1>
+          <p class="home-hero__description">
+            一盞桌燈、一副耳機，從每天用得到的東西開始挑。
+          </p>
+          <RouterLink class="home-hero__action" to="/products">
+            逛逛全部商品
+          </RouterLink>
+        </div>
+        <RouterLink class="home-hero__feature" to="/products/halo-lamp">
+          <img
+            :src="haloLamp"
+            alt="Halo 環形桌燈"
+            width="800"
+            height="1000"
+            fetchpriority="high"
+          />
+          <span>
+            Halo 桌燈
+            <span aria-hidden="true">↗</span>
+          </span>
+        </RouterLink>
       </div>
     </section>
     <section class="home-section container" aria-labelledby="category-heading">
       <div class="home-section__heading">
-        <p>Shop by category</p>
-        <h2 id="category-heading">從需要開始，找到喜歡</h2>
+        <h2 id="category-heading">依分類逛逛</h2>
       </div>
       <nav class="home-categories" aria-label="商品分類">
         <RouterLink
           v-for="category in categories"
           :key="category.name"
           :to="{ name: 'catalog', query: { category: category.name } }"
-          ><strong>{{ category.name }}</strong
-          ><span>{{ category.note }}</span></RouterLink
         >
+          <strong>{{ category.name }}</strong>
+          <span>{{ category.note }}</span>
+        </RouterLink>
       </nav>
     </section>
     <section class="home-section container" aria-labelledby="featured-heading">
       <div class="home-section__heading">
-        <p>Editor's picks</p>
         <h2 id="featured-heading">精選商品</h2>
       </div>
       <ProductGridSkeleton v-if="loading" />
@@ -79,6 +99,7 @@ loadProducts();
         <button type="button" @click="loadProducts">重試</button>
       </section>
       <div v-else class="home-grid">
+        <!-- 精選商品 -->
         <ProductCard
           v-for="product in featured"
           :key="product.id"
@@ -92,10 +113,10 @@ loadProducts();
     >
       <div class="container">
         <div class="home-section__heading">
-          <p>New arrivals</p>
           <h2 id="new-heading">最新上架</h2>
         </div>
         <div v-if="!loading && !failed" class="home-grid">
+          <!-- 最新上架商品 -->
           <ProductCard
             v-for="product in newest"
             :key="product.id"
@@ -109,22 +130,24 @@ loadProducts();
 
 <style scoped>
 .home-hero {
-  padding-block: clamp(4rem, 12vw, 9rem);
+  padding-block: clamp(2rem, 5vw, 4rem);
   background: var(--color-sand);
+}
+.home-hero__layout {
+  display: grid;
+  align-items: center;
+  gap: 2rem;
 }
 .home-hero__content {
   display: grid;
   justify-items: start;
-  max-width: 70rem;
 }
-.home-hero p,
-.home-section__heading p {
+.home-hero__eyebrow {
   margin: 0 0 0.6rem;
   color: var(--color-muted);
   font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 h1,
 h2 {
@@ -132,18 +155,18 @@ h2 {
   font-family: var(--font-display);
 }
 h1 {
-  max-width: 14ch;
-  font-size: clamp(3rem, 10vw, 6.5rem);
-  line-height: 0.98;
-  letter-spacing: -0.055em;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1.3;
+  letter-spacing: -0.025em;
 }
-.home-hero span {
-  max-width: 34rem;
-  margin-top: 1.4rem;
+.home-hero__description {
+  max-width: 24rem;
+  margin: 1rem 0 0;
   color: var(--color-muted);
-  font-size: clamp(1rem, 2vw, 1.2rem);
+  font-size: 1rem;
+  line-height: 1.8;
 }
-.home-hero a,
+.home-hero__action,
 .home-message button {
   min-height: 44px;
   display: inline-flex;
@@ -156,8 +179,31 @@ h1 {
   background: var(--color-ink);
   font-weight: 600;
 }
+.home-hero__feature {
+  display: block;
+  max-width: 28rem;
+  width: 100%;
+  justify-self: center;
+}
+.home-hero__feature img {
+  width: 100%;
+  height: auto;
+  max-height: 25rem;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.home-hero__feature > span {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  font-size: 0.875rem;
+}
+.home-hero__feature:hover > span {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
 .home-section {
-  padding-block: clamp(3rem, 8vw, 5.5rem);
+  padding-block: clamp(2.5rem, 6vw, 4rem);
 }
 .home-section--sand {
   background: var(--color-sand);
@@ -166,9 +212,8 @@ h1 {
   margin-bottom: 1.4rem;
 }
 h2 {
-  font-size: clamp(2rem, 5vw, 3.25rem);
-  line-height: 1.05;
-  letter-spacing: -0.035em;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.4;
 }
 .home-categories,
 .home-grid {
@@ -217,6 +262,10 @@ h2 {
   margin-top: 0.3rem;
 }
 @media (min-width: 48rem) {
+  .home-hero__layout {
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+  }
   .home-categories {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }

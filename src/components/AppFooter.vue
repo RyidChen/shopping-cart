@@ -1,8 +1,10 @@
+<!-- 品牌頁尾和動態年份 -->
 <template>
   <footer class="site-footer">
     <div class="container site-footer__inner">
       <p class="site-footer__brand">Curio</p>
-      <p>為日常挑選，值得久留的物件。</p>
+      <p>Curio 日常選物 · 居家、穿搭與隨身好物</p>
+      <!-- 年份在渲染時動態取得，避免每年手動修改頁尾。 -->
       <small>© {{ new Date().getFullYear() }} 陳泓孝</small>
     </div>
   </footer>

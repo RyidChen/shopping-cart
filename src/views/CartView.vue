@@ -1,3 +1,4 @@
+<!-- 修改數量、刪除商品、計算小計 -- 購物車-->
 <script setup lang="ts">
 import EmptyState from "../components/EmptyState.vue";
 import QuantityControl from "../components/QuantityControl.vue";
@@ -18,7 +19,7 @@ const cart = useCartStore();
       <EmptyState
         v-if="!cart.items.length"
         title="購物車是空的"
-        message="挑選幾件喜歡的物件，開始您的 Curio 選購。"
+        message="還沒找到喜歡的商品？先去逛逛。"
         action-label="瀏覽商品"
         to="/products"
       />
@@ -28,9 +29,20 @@ const cart = useCartStore();
           <h2 id="cart-lines-title" class="sr-only">購物車商品</h2>
           <ul class="cart-view__lines">
             <li v-for="line in cart.items" :key="line.lineId" class="cart-line">
-              <img :src="line.image" :alt="line.name" />
+              <RouterLink
+                class="cart-line__image"
+                :to="{ name: 'product', params: { slug: line.slug } }"
+              >
+                <img :src="line.image" :alt="line.name" />
+              </RouterLink>
               <div class="cart-line__details">
-                <h2>{{ line.name }}</h2>
+                <h2>
+                  <RouterLink
+                    :to="{ name: 'product', params: { slug: line.slug } }"
+                  >
+                    {{ line.name }}
+                  </RouterLink>
+                </h2>
                 <dl
                   v-if="Object.keys(line.selectedOptions).length"
                   class="cart-line__options"
@@ -74,7 +86,7 @@ const cart = useCartStore();
               <dd>{{ formatCurrency(cart.subtotal) }}</dd>
             </div>
           </dl>
-          <p>第一版所有訂單皆享免運費。</p>
+          <p>運費 NT$0（示範訂單）</p>
           <RouterLink to="/checkout">前往結帳</RouterLink>
         </aside>
       </div>
@@ -125,8 +137,13 @@ h1 {
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--color-border);
 }
-.cart-line > img {
-  width: 6rem;
+.cart-line__image {
+  display: block;
+  align-self: start;
+  border-radius: var(--radius-sm);
+}
+.cart-line__image img {
+  width: 100%;
   aspect-ratio: 4 / 5;
   border-radius: var(--radius-sm);
   background: var(--color-sand);
@@ -139,6 +156,10 @@ h1 {
   margin: 0;
   overflow-wrap: anywhere;
   font-size: 1.25rem;
+}
+.cart-line h2 a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 .cart-line__options {
   display: flex;
@@ -234,9 +255,6 @@ h1 {
     grid-template-columns: 8rem minmax(0, 1fr) auto;
     padding-bottom: 1.5rem;
   }
-  .cart-line > img {
-    width: 8rem;
-  }
   .cart-line__total {
     grid-column: auto;
     display: grid;
@@ -245,7 +263,7 @@ h1 {
   }
   .cart-summary {
     position: sticky;
-    top: 1.5rem;
+    top: 5.5rem;
   }
 }
 </style>

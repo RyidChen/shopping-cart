@@ -1,6 +1,8 @@
+<!-- 搜尋、分類、價格、排序；手機使用原生 dialog -->
 <script setup lang="ts">
-import { ref } from "vue";
-import type { ProductFilters, ProductSort } from "../types/commerce";
+import { onMounted, onUnmounted, ref } from "vue";
+import type { ProductFilters } from "../types/commerce";
+import CatalogFilterFields from "./CatalogFilterFields.vue";
 
 defineProps<{ filters: ProductFilters; categories: string[] }>();
 const emit = defineEmits<{
@@ -9,16 +11,28 @@ const emit = defineEmits<{
 }>();
 const dialog = ref<HTMLDialogElement>();
 
-const update = (
-  event: Event,
-  key: "q" | "category" | "min" | "max" | "sort",
-) => {
-  emit("update", {
-    [key]: (event.target as HTMLInputElement | HTMLSelectElement).value,
-  });
-};
+// 原生 dialog 會協助處理焦點鎖定、Esc 關閉與背景遮罩。
+function openDialog() {
+  dialog.value?.showModal();
+}
 
-const openDialog = () => dialog.value?.showModal?.();
+function resetFilters() {
+  emit("reset");
+  dialog.value?.close();
+}
+
+// 切換到桌面版時關閉手機對話框，避免隱藏的 dialog 繼續鎖住頁面焦點。
+let desktopQuery: MediaQueryList;
+function closeDialogOnDesktop() {
+  if (desktopQuery.matches) dialog.value?.close();
+}
+onMounted(() => {
+  desktopQuery = window.matchMedia("(min-width: 64rem)");
+  desktopQuery.addEventListener("change", closeDialogOnDesktop);
+});
+onUnmounted(() => {
+  desktopQuery.removeEventListener("change", closeDialogOnDesktop);
+});
 </script>
 
 <template>
@@ -26,132 +40,32 @@ const openDialog = () => dialog.value?.showModal?.();
     <button class="catalog-filters__open" type="button" @click="openDialog">
       篩選與排序
     </button>
+    <!-- 桌面版常駐側欄；手機版改用下方 dialog，兩者共用相同更新事件。 -->
     <aside class="catalog-filters__desktop" aria-label="商品篩選">
-      <div class="catalog-filters__controls">
-        <label
-          >搜尋商品<input
-            :value="filters.search"
-            type="search"
-            placeholder="名稱或品牌"
-            @input="update($event, 'q')"
-        /></label>
-        <label
-          >分類<select
-            id="catalog-category"
-            :value="filters.category"
-            @change="update($event, 'category')"
-          >
-            <option value="">全部分類</option>
-            <option
-              v-for="category in categories"
-              :key="category"
-              :value="category"
-            >
-              {{ category }}
-            </option>
-          </select></label
-        >
-        <label
-          >最低價格<input
-            :value="filters.minPrice ?? ''"
-            type="number"
-            min="0"
-            inputmode="numeric"
-            @input="update($event, 'min')"
-        /></label>
-        <label
-          >最高價格<input
-            :value="filters.maxPrice ?? ''"
-            type="number"
-            min="0"
-            inputmode="numeric"
-            @input="update($event, 'max')"
-        /></label>
-        <label
-          >排序<select :value="filters.sort" @change="update($event, 'sort')">
-            <option value="newest">最新上架</option>
-            <option value="price-asc">價格由低到高</option>
-            <option value="price-desc">價格由高到低</option>
-          </select></label
-        >
-        <button
-          class="catalog-filters__reset"
-          type="button"
-          @click="emit('reset')"
-        >
-          清除條件
-        </button>
-      </div>
+      <CatalogFilterFields
+        :filters="filters"
+        :categories="categories"
+        @update="emit('update', $event)"
+        @reset="resetFilters"
+      />
     </aside>
     <dialog ref="dialog" class="catalog-filters__dialog" aria-label="商品篩選">
       <form method="dialog" class="catalog-filters__dialog-header">
-        <strong>篩選與排序</strong
-        ><button type="submit" aria-label="關閉篩選">關閉</button>
+        <strong>篩選與排序</strong>
+        <button type="submit" aria-label="關閉篩選">關閉</button>
       </form>
-      <div class="catalog-filters__controls">
-        <label
-          >搜尋商品<input
-            :value="filters.search"
-            type="search"
-            placeholder="名稱或品牌"
-            @input="update($event, 'q')"
-        /></label>
-        <label
-          >分類<select
-            :value="filters.category"
-            @change="update($event, 'category')"
-          >
-            <option value="">全部分類</option>
-            <option
-              v-for="category in categories"
-              :key="category"
-              :value="category"
-            >
-              {{ category }}
-            </option>
-          </select></label
-        >
-        <label
-          >最低價格<input
-            :value="filters.minPrice ?? ''"
-            type="number"
-            min="0"
-            inputmode="numeric"
-            @input="update($event, 'min')"
-        /></label>
-        <label
-          >最高價格<input
-            :value="filters.maxPrice ?? ''"
-            type="number"
-            min="0"
-            inputmode="numeric"
-            @input="update($event, 'max')"
-        /></label>
-        <label
-          >排序<select :value="filters.sort" @change="update($event, 'sort')">
-            <option value="newest">最新上架</option>
-            <option value="price-asc">價格由低到高</option>
-            <option value="price-desc">價格由高到低</option>
-          </select></label
-        >
-        <button
-          class="catalog-filters__reset"
-          type="button"
-          @click="
-            emit('reset');
-            dialog?.close();
-          "
-        >
-          清除條件
-        </button>
-      </div>
+      <CatalogFilterFields
+        :filters="filters"
+        :categories="categories"
+        @update="emit('update', $event)"
+        @reset="resetFilters"
+      />
     </dialog>
   </div>
 </template>
 
 <style scoped>
 .catalog-filters__open,
-.catalog-filters__reset,
 .catalog-filters__dialog button {
   min-height: 44px;
   border: 1px solid var(--color-border);
@@ -165,27 +79,6 @@ const openDialog = () => dialog.value?.showModal?.();
 }
 .catalog-filters__desktop {
   display: none;
-}
-.catalog-filters__controls {
-  display: grid;
-  gap: 1rem;
-}
-label {
-  display: grid;
-  gap: 0.4rem;
-  color: var(--color-muted);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-input,
-select {
-  width: 100%;
-  min-height: 44px;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink);
-  background: var(--color-surface);
 }
 .catalog-filters__dialog {
   width: min(100% - 2rem, 30rem);
@@ -220,8 +113,6 @@ select {
   }
   .catalog-filters__desktop {
     display: block;
-  }
-  .catalog-filters__desktop {
     position: sticky;
     top: 5.5rem;
     padding: 1.25rem;

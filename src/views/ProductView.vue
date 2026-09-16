@@ -1,3 +1,4 @@
+<!-- 商品詳情、規格選擇、庫存、加入購物車 -- 詳情頁 -->
 <script setup lang="ts">
 import {
   computed,
@@ -28,7 +29,7 @@ const successMessage = ref("");
 const optionGroups = new Map<string, HTMLElement>();
 let requestId = 0;
 
-const unavailableOptions = computed(() =>
+const missingOptions = computed(() =>
   product.value
     ? missingOptionNames(product.value.options, selectedOptions.value)
     : [],
@@ -65,7 +66,7 @@ const loadProduct = async () => {
 
 const addToCart = async () => {
   if (!product.value || product.value.inventory === 0) return;
-  const missing = unavailableOptions.value;
+  const missing = missingOptions.value;
   if (missing.length) {
     optionError.value = `請選擇：${missing[0]}`;
     await nextTick();
@@ -179,7 +180,7 @@ watch(() => route.params.slug, loadProduct, { immediate: true });
             aria-required="true"
             tabindex="-1"
             :aria-describedby="
-              optionError && unavailableOptions.includes(option.name)
+              optionError && missingOptions.includes(option.name)
                 ? `${option.name}-error`
                 : undefined
             "
@@ -202,7 +203,7 @@ watch(() => route.params.slug, loadProduct, { immediate: true });
               </label>
             </div>
             <p
-              v-if="optionError && unavailableOptions.includes(option.name)"
+              v-if="optionError && missingOptions.includes(option.name)"
               :id="`${option.name}-error`"
               class="product-view__option-error"
             >
@@ -225,8 +226,9 @@ watch(() => route.params.slug, loadProduct, { immediate: true });
             class="product-view__submit"
             type="submit"
             :disabled="product.inventory === 0"
-            >{{ product.inventory ? "加入購物車" : "暫時缺貨" }}</BaseButton
           >
+            {{ product.inventory ? "加入購物車" : "暫時缺貨" }}
+          </BaseButton>
         </form>
       </section>
     </article>

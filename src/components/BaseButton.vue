@@ -1,4 +1,6 @@
+<!-- 共用按鈕 variant、loading、disabled 狀態 -->
 <script setup lang="ts">
+// 集中管理按鈕外觀與共用狀態，呼叫端只需指定需要的 variant。
 withDefaults(
   defineProps<{
     variant?: "primary" | "secondary" | "text";
@@ -11,10 +13,10 @@ withDefaults(
 </script>
 
 <template>
+  <!-- 載入時同步停用按鈕，避免非同步操作被重複送出。 -->
   <button
     class="button"
     :class="`button--${variant}`"
-    style="min-width: 44px; min-height: 44px"
     :type="type"
     :disabled="disabled || loading"
     :aria-busy="loading || undefined"

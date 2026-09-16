@@ -76,13 +76,11 @@ export function applyCatalogQuery(
       (product) =>
         filters.maxPrice === undefined || product.price <= filters.maxPrice,
     )
-    .sort((a, b) =>
-      filters.sort === "newest"
-        ? b.createdAt.localeCompare(a.createdAt)
-        : filters.sort === "price-asc"
-          ? a.price - b.price
-          : b.price - a.price,
-    );
+    .sort((a, b) => {
+      if (filters.sort === "price-asc") return a.price - b.price;
+      if (filters.sort === "price-desc") return b.price - a.price;
+      return b.createdAt.localeCompare(a.createdAt);
+    });
 
   // 先以完整結果計算頁數，再只擷取目前頁面的資料。
   const total = matching.length;

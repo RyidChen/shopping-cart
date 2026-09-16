@@ -1,3 +1,4 @@
+// 結帳欄位驗證、訂單編號、儲存訂單資料的安全解析
 export type PaymentMethod = "cod" | "online";
 
 /** 結帳表單尚未驗證的輸入資料；payment 未選擇時為空字串。 */
@@ -64,12 +65,25 @@ export const createOrderNumber = () => {
 
 /**
  * 解析並驗證外部儲存的訂單快照；格式錯誤、欄位缺漏或總額不符時回傳 null。
+ * 訂單成功頁使用，避免格式不完整的 sessionStorage 資料造成畫面錯誤。
+ * 這是前端資料格式驗證；真實訂單與金額仍須由伺服器確認。
  */
 export const readOrderSnapshot = (
   stored: string | null,
 ): OrderSnapshot | null => {
   try {
     const value: unknown = stored && JSON.parse(stored);
+    // 做檢查
+    /**
+     * JSON 格式能不能正確解析
+        訂單編號是否符合 CR-YYYYMMDD-####
+        姓名、Email、電話和地址是否存在
+        付款方式是否為 cod 或 online
+        商品陣列是否存在且至少有一件商品
+        每項商品的名稱、價格、數量、庫存和規格是否合法
+        商品數量是否沒有超過庫存
+        subtotal 是否等於所有商品的「單價 × 數量」總和
+     */
     if (
       !isRecord(value) ||
       !isRequiredString(value.orderNumber) ||
@@ -82,17 +96,18 @@ export const readOrderSnapshot = (
       return null;
     if (!value.items.every(isOrderLine)) return null;
     const items = value.items as OrderLine[];
-    return items.reduce(
+    const subtotal = items.reduce(
       (total, item) => total + item.unitPrice * item.quantity,
       0,
-    ) === value.subtotal
-      ? {
-          orderNumber: value.orderNumber,
-          details: value.details,
-          items,
-          subtotal: value.subtotal,
-        }
-      : null;
+    );
+    if (subtotal !== value.subtotal) return null;
+
+    return {
+      orderNumber: value.orderNumber,
+      details: value.details,
+      items,
+      subtotal,
+    };
   } catch {
     return null;
   }
@@ -117,6 +132,7 @@ const isStringMap = (value: unknown): value is Record<string, string> =>
     ([key, item]) => isRequiredString(key) && isRequiredString(item),
   );
 
+// 負責檢查訂單中的「顧客與配送資料」
 const isOrderDetails = (value: unknown): value is OrderDetails =>
   isRecord(value) &&
   isRequiredString(value.name) &&
@@ -125,6 +141,7 @@ const isOrderDetails = (value: unknown): value is OrderDetails =>
   isRequiredString(value.address) &&
   (value.payment === "cod" || value.payment === "online");
 
+// 負責檢查訂單中的「商品明細」
 const isOrderLine = (value: unknown): value is OrderLine =>
   isRecord(value) &&
   isRequiredString(value.lineId) &&

@@ -1,4 +1,6 @@
+<!-- 商品載入中的骨架畫面 -->
 <template>
+  <!-- aria-busy 告知輔助工具商品仍在載入；內部卡片僅是視覺佔位。 -->
   <section
     class="product-grid-skeleton"
     aria-label="商品載入中"

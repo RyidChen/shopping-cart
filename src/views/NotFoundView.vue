@@ -1,11 +1,10 @@
+<!-- 404 與返回有效頁面的入口 -->
 <template>
   <main class="not-found">
     <section class="not-found__content">
       <p>404 / page not found</p>
       <h1>找不到這個頁面</h1>
-      <span
-        >網址可能有誤，或這個頁面已經移動。讓我們帶您回到可瀏覽的商品。</span
-      >
+      <span>網址可能有誤，或頁面已移除。您可以返回首頁，或繼續瀏覽商品。</span>
       <nav aria-label="404 導覽">
         <RouterLink to="/">返回首頁</RouterLink>
         <RouterLink to="/products">瀏覽商品</RouterLink>

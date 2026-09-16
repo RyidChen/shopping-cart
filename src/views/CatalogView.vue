@@ -1,7 +1,9 @@
+<!-- 搜尋、分類、價格篩選、排序、分頁 -- 商品列表 -->
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import CatalogFilters from "../components/CatalogFilters.vue";
+import BaseButton from "../components/BaseButton.vue";
 import EmptyState from "../components/EmptyState.vue";
 import ProductCard from "../components/ProductCard.vue";
 import ProductGridSkeleton from "../components/ProductGridSkeleton.vue";
@@ -23,8 +25,7 @@ async function loadProducts() {
   loading.value = true;
   failed.value = false;
   try {
-    const request = queryProducts(filters.value);
-    const response = await request;
+    const response = await queryProducts(filters.value);
     if (id === requestId && filters.value.page > response.totalPages) {
       router.replace({
         query: { ...route.query, page: String(response.totalPages) },
@@ -40,10 +41,12 @@ async function loadProducts() {
 }
 
 function updateQuery(changes: Record<string, string>) {
-  const query = { ...route.query } as Record<string, string>;
+  const query = { ...route.query };
   if (!("page" in changes)) delete query.page;
-  for (const [key, value] of Object.entries(changes))
-    value ? (query[key] = value) : delete query[key];
+  for (const [key, value] of Object.entries(changes)) {
+    if (value) query[key] = value;
+    else delete query[key];
+  }
   router.replace({ query });
 }
 
@@ -63,9 +66,8 @@ watch(
 <template>
   <main class="catalog container">
     <header class="catalog__intro">
-      <p>Curio catalog</p>
-      <h1>留給日常的好設計</h1>
-      <span>從實用物件到剛好的小細節，慢慢挑選。</span>
+      <h1>全部商品</h1>
+      <span>依分類、預算挑選，也可以直接搜尋商品名稱或品牌。</span>
     </header>
     <div class="catalog__layout">
       <CatalogFilters
@@ -84,11 +86,12 @@ watch(
         <EmptyState
           v-else-if="!result || !result.items.length"
           title="找不到符合條件的商品"
-          message="調整搜尋或篩選條件，看看其他精選商品。"
-          ><button type="button" @click="router.replace({ query: {} })">
-            清除條件
-          </button></EmptyState
+          message="試試其他關鍵字，或清除篩選條件。"
         >
+          <BaseButton @click="router.replace({ query: {} })">
+            清除條件
+          </BaseButton>
+        </EmptyState>
         <template v-else>
           <p class="catalog__count">共 {{ result.total }} 件商品</p>
           <div class="catalog__grid">
@@ -108,9 +111,10 @@ watch(
               :disabled="filters.page === 1"
               @click="changePage(filters.page - 1)"
             >
-              上一頁</button
-            ><span>第 {{ filters.page }} / {{ result.totalPages }} 頁</span
-            ><button
+              上一頁
+            </button>
+            <span>第 {{ filters.page }} / {{ result.totalPages }} 頁</span>
+            <button
               type="button"
               :disabled="filters.page === result.totalPages"
               @click="changePage(filters.page + 1)"
@@ -132,23 +136,14 @@ watch(
   max-width: 42rem;
   margin-bottom: 2rem;
 }
-.catalog__intro p {
-  margin: 0 0 0.5rem;
-  color: var(--color-muted);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
 h1,
 h2 {
   margin: 0;
   font-family: var(--font-display);
 }
 h1 {
-  font-size: clamp(2.35rem, 7vw, 4.5rem);
-  line-height: 1.02;
-  letter-spacing: -0.04em;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.3;
 }
 .catalog__intro span {
   display: block;
@@ -186,8 +181,7 @@ h1 {
   color: var(--color-muted);
 }
 .catalog__message button,
-.catalog__pagination button,
-:deep(.empty-state button) {
+.catalog__pagination button {
   min-height: 44px;
   padding-inline: 1rem;
   border: 1px solid var(--color-ink);

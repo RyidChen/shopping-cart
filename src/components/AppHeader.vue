@@ -1,3 +1,4 @@
+<!-- Logo、桌面／手機導覽、即時購物車數量 -->
 <script setup lang="ts">
 import { Menu, ShoppingCart, X } from "@lucide/vue";
 import { ref } from "vue";
@@ -35,6 +36,7 @@ const cart = useCartStore();
         <X v-if="menuOpen" aria-hidden="true" :size="22" />
         <Menu v-else aria-hidden="true" :size="22" />
       </button>
+      <!-- 手機版由選單按鈕控制展開；桌面版會透過媒體查詢固定顯示。 -->
       <nav
         id="site-navigation"
         class="site-header__nav"
@@ -42,20 +44,22 @@ const cart = useCartStore();
         aria-label="主要導覽"
       >
         <RouterLink to="/" @click="menuOpen = false">首頁</RouterLink>
-        <RouterLink to="/products" @click="menuOpen = false"
-          >商品列表</RouterLink
-        >
+        <RouterLink to="/products" @click="menuOpen = false">
+          商品列表
+        </RouterLink>
       </nav>
+      <!-- aria-label 帶入即時件數，讓輔助工具能讀出完整購物車狀態。 -->
       <RouterLink
         class="site-header__cart"
         to="/cart"
         :aria-label="`購物車，目前 ${cart.itemCount} 件商品`"
+        @click="menuOpen = false"
       >
         <ShoppingCart aria-hidden="true" :size="19" :stroke-width="1.9" />
         <span>購物車</span>
-        <span class="site-header__count" aria-hidden="true">{{
-          cart.itemCount
-        }}</span>
+        <span class="site-header__count" aria-hidden="true">
+          {{ cart.itemCount }}
+        </span>
       </RouterLink>
     </div>
   </header>
@@ -161,8 +165,13 @@ const cart = useCartStore();
     display: none;
   }
   .site-header__nav {
+    position: static;
     display: flex;
     gap: 0.25rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
   .site-header__brand-logo {
     height: 2.75rem;

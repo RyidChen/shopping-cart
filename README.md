@@ -37,6 +37,19 @@ npm run dev
 npm run build
 ```
 
+執行前台邏輯檢查（Node.js 24，使用內建測試工具，不安裝測試套件）：
+
+```bash
+npm test
+```
+
+## 前台程式與樣式分工
+
+- `src/views`：各頁面的資料載入、操作流程與版面。
+- `src/components`：跨頁或跨版面使用的元件。`CatalogFilters.vue` 處理桌面側欄與手機對話框，`CatalogFilterFields.vue` 共用搜尋、分類、價格及排序欄位。
+- `src/utils`：商品篩選、金額格式化與結帳驗證；`src/stores/cart.ts` 保存跨頁購物車狀態。
+- 元件專用樣式放在各自的 `<style scoped>`；`src/styles/base.css` 只保留基礎樣式、共用容器、焦點與無障礙設定，`tokens.css` 保存共用設計變數。
+
 ## 目前限制
 
 這是前台 mock 作品集，不含登入、真實付款、資料庫或 API server。`shopping-cart` 與 `shopping-cart-backend` 目前各自使用不同的 mock data 與瀏覽器儲存空間，因此後台的商品或訂單修改不會同步到前台；兩者改接同一套 API 後才會支援同步。

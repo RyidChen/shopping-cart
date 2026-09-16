@@ -1,7 +1,9 @@
+<!-- 商品圖、品牌、名稱、價格與庫存 -->
 <script setup lang="ts">
 import type { Product } from "../types/commerce";
 import { formatCurrency } from "../utils/format";
 
+// 商品卡只負責呈現資料，詳情頁網址統一由穩定的 product slug 建立。
 defineProps<{ product: Product }>();
 </script>
 
@@ -9,16 +11,17 @@ defineProps<{ product: Product }>();
   <article class="product-card">
     <RouterLink class="product-card__image" :to="`/products/${product.slug}`">
       <img :src="product.images[0]" :alt="product.name" loading="lazy" />
-      <span v-if="product.inventory === 0" class="product-card__sold-out"
-        >售完</span
-      >
+      <!-- inventory 同時決定售完標籤與下方庫存文案，避免兩處狀態不一致。 -->
+      <span v-if="product.inventory === 0" class="product-card__sold-out">
+        售完
+      </span>
     </RouterLink>
     <div class="product-card__details">
       <p>{{ product.brand }}</p>
       <h2>
-        <RouterLink :to="`/products/${product.slug}`">{{
-          product.name
-        }}</RouterLink>
+        <RouterLink :to="`/products/${product.slug}`">
+          {{ product.name }}
+        </RouterLink>
       </h2>
       <div class="product-card__meta">
         <strong>{{ formatCurrency(product.price) }}</strong>
@@ -28,10 +31,9 @@ defineProps<{ product: Product }>();
               ? 'product-card__stock--available'
               : 'product-card__stock--empty'
           "
-          >{{
-            product.inventory ? `尚有 ${product.inventory} 件` : "目前缺貨"
-          }}</span
         >
+          {{ product.inventory ? `尚有 ${product.inventory} 件` : "目前缺貨" }}
+        </span>
       </div>
     </div>
   </article>
@@ -41,22 +43,13 @@ defineProps<{ product: Product }>();
 .product-card {
   min-width: 0;
   overflow: hidden;
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-  transition:
-    box-shadow var(--transition),
-    transform var(--transition);
-}
-.product-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
 }
 .product-card__image {
   position: relative;
   display: block;
   aspect-ratio: 4 / 5;
   overflow: hidden;
+  border-radius: var(--radius-sm);
   background: var(--color-sand);
 }
 img {
@@ -82,7 +75,7 @@ img {
 .product-card__details {
   display: grid;
   gap: 0.3rem;
-  padding: 1rem;
+  padding-block: 0.9rem;
 }
 p,
 h2 {
@@ -106,6 +99,7 @@ h2 a {
 }
 .product-card__meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem;
@@ -126,9 +120,6 @@ strong {
   color: var(--color-danger);
 }
 @media (prefers-reduced-motion: reduce) {
-  .product-card:hover {
-    transform: none;
-  }
   .product-card:hover img {
     transform: none;
   }

@@ -1,3 +1,4 @@
+<!-- 驗證收件資料、建立模擬訂單、清空購物車 --結帳頁面 -->
 <script setup lang="ts">
 import { nextTick, onMounted, reactive, ref } from "vue";
 import { isNavigationFailure, useRouter } from "vue-router";
@@ -106,8 +107,8 @@ const submit = async () => {
   <main class="checkout-view">
     <div class="container">
       <header class="checkout-view__header">
-        <p>安全的模擬結帳(目前僅做頁面展示，未做實際交易)</p>
-        <h1>完成訂單</h1>
+        <p>示範結帳，不會產生實際交易。</p>
+        <h1>填寫收件資料</h1>
       </header>
 
       <div class="checkout-view__layout">
@@ -192,24 +193,26 @@ const submit = async () => {
             :aria-invalid="Boolean(errors.payment)"
           >
             <legend>付款方式</legend>
-            <label class="payment__option" for="payment-cod"
-              ><input
+            <label class="payment__option" for="payment-cod">
+              <input
                 id="payment-cod"
                 v-model="details.payment"
                 type="radio"
                 name="payment"
                 value="cod"
-              />貨到付款</label
-            >
-            <label class="payment__option" for="payment-online"
-              ><input
+              />
+              貨到付款
+            </label>
+            <label class="payment__option" for="payment-online">
+              <input
                 id="payment-online"
                 v-model="details.payment"
                 type="radio"
                 name="payment"
                 value="online"
-              />模擬線上付款</label
-            >
+              />
+              模擬線上付款
+            </label>
             <p
               v-if="errors.payment"
               id="payment-error"
@@ -235,10 +238,10 @@ const submit = async () => {
           <h2 id="checkout-summary-title">訂單摘要</h2>
           <ul>
             <li v-for="line in cart.items" :key="line.lineId">
-              <span>{{ line.name }} × {{ line.quantity }}</span
-              ><strong>{{
-                formatCurrency(line.unitPrice * line.quantity)
-              }}</strong>
+              <span>{{ line.name }} × {{ line.quantity }}</span>
+              <strong>
+                {{ formatCurrency(line.unitPrice * line.quantity) }}
+              </strong>
             </li>
           </ul>
           <dl>
@@ -434,7 +437,7 @@ button[type="submit"] {
   }
   .checkout-summary {
     position: sticky;
-    top: 1.5rem;
+    top: 5.5rem;
   }
 }
 </style>

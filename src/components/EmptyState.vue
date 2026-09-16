@@ -1,4 +1,6 @@
+<!-- 購物車空白、搜尋無結果等共用空狀態 -->
 <script setup lang="ts">
+// actionLabel 與 to 同時存在時顯示預設操作；slot 可補充其他自訂內容。
 defineProps<{
   title: string;
   message: string;
@@ -11,9 +13,9 @@ defineProps<{
   <section class="empty-state">
     <h2>{{ title }}</h2>
     <p>{{ message }}</p>
-    <RouterLink v-if="actionLabel && to" class="empty-state__action" :to="to">{{
-      actionLabel
-    }}</RouterLink>
+    <RouterLink v-if="actionLabel && to" class="empty-state__action" :to="to">
+      {{ actionLabel }}
+    </RouterLink>
     <slot />
   </section>
 </template>

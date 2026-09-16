@@ -1,6 +1,8 @@
+<!-- 加減與手動輸入數量，統一處理上下限 -->
 <script setup lang="ts">
 import { useId } from "vue";
 
+// 支援 v-model，並讓呼叫端依商品庫存設定可購買的上下限。
 const props = withDefaults(
   defineProps<{ modelValue: number; min?: number; max?: number }>(),
   { min: 1, max: Infinity },
@@ -8,6 +10,7 @@ const props = withDefaults(
 const emit = defineEmits<{ "update:modelValue": [value: number] }>();
 const inputId = useId();
 
+// 手動輸入與加減按鈕共用此入口：先轉成整數，再限制於合法範圍。
 const update = (value: number) => {
   const next = Math.min(
     Math.max(Math.trunc(value) || props.min, props.min),
