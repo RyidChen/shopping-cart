@@ -32,6 +32,29 @@ export const routes: RouteRecordRaw[] = [
     component: () => import("../views/OrderSuccessView.vue"),
   },
   {
+    path: "/login",
+    name: "login",
+    component: () => import("../views/LoginView.vue"),
+    meta: { guestOnly: true },
+  },
+  {
+    path: "/register",
+    name: "register",
+    component: () => import("../views/RegisterView.vue"),
+    meta: { guestOnly: true },
+  },
+  {
+    path: "/account/orders",
+    name: "order-history",
+    component: () => import("../views/OrderHistoryView.vue"),
+  },
+  {
+    path: "/account",
+    name: "account",
+    component: () => import("../views/AccountView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
     path: "/:pathMatch(.*)*",
     name: "not-found",
     component: () => import("../views/NotFoundView.vue"),

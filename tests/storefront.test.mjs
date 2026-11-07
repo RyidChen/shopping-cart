@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { createPinia, setActivePinia } from "pinia";
 import { useCartStore } from "../src/stores/cart.ts";
 import { applyCatalogQuery, parseCatalogQuery } from "../src/utils/catalog.ts";
-import { readOrderSnapshot, validateCheckout } from "../src/utils/checkout.ts";
+import { validateCheckout } from "../src/utils/checkout.ts";
 
 const product = {
   id: "lamp",
@@ -85,7 +85,7 @@ test("相同商品規格不受欄位順序影響，合併數量仍受庫存限�
   }
 });
 
-test("結帳欄位與訂單金額驗證在整理後仍有效", () => {
+test("結帳欄位驗證拒絕無效 Email", () => {
   const details = {
     name: "測試",
     email: "test@example.com",
@@ -98,26 +98,4 @@ test("結帳欄位與訂單金額驗證在整理後仍有效", () => {
     validateCheckout({ ...details, email: "invalid" }).email,
     "請輸入有效的電子郵件",
   );
-  const order = {
-    orderNumber: "CR-20260916-1234",
-    items: [
-      {
-        lineId: "lamp",
-        name: "桌燈",
-        image: "/lamp.png",
-        unitPrice: 100,
-        quantity: 2,
-        inventory: 5,
-        selectedOptions: { 顏色: "白" },
-      },
-    ],
-    subtotal: 200,
-    details,
-  };
-  assert.deepEqual(readOrderSnapshot(JSON.stringify(order)), order);
-  assert.equal(
-    readOrderSnapshot(JSON.stringify({ ...order, subtotal: 1 })),
-    null,
-  );
-  assert.equal(readOrderSnapshot("invalid-json"), null);
 });

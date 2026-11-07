@@ -1,11 +1,26 @@
 <!-- 修改數量、刪除商品、計算小計 -- 購物車-->
 <script setup lang="ts">
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import CheckoutLoginDialog from "../components/CheckoutLoginDialog.vue";
 import EmptyState from "../components/EmptyState.vue";
 import QuantityControl from "../components/QuantityControl.vue";
 import { useCartStore } from "../stores/cart";
+import { useAuthStore } from "../stores/auth";
 import { formatCurrency } from "../utils/format";
 
 const cart = useCartStore();
+const auth = useAuthStore();
+const router = useRouter();
+const loginDialog = ref<InstanceType<typeof CheckoutLoginDialog> | null>(null);
+
+function checkout() {
+  if (!auth.user) {
+    loginDialog.value?.show();
+    return;
+  }
+  void router.push("/checkout");
+}
 </script>
 
 <template>
@@ -87,10 +102,11 @@ const cart = useCartStore();
             </div>
           </dl>
           <p>運費 NT$0（示範訂單）</p>
-          <RouterLink to="/checkout">前往結帳</RouterLink>
+          <button type="button" @click="checkout">前往結帳</button>
         </aside>
       </div>
     </div>
+    <CheckoutLoginDialog ref="loginDialog" />
   </main>
 </template>
 
@@ -235,7 +251,8 @@ h1 {
   color: var(--color-muted);
   font-size: 0.9rem;
 }
-.cart-summary a {
+.cart-summary button {
+  border: 0;
   min-height: 44px;
   display: inline-flex;
   align-items: center;

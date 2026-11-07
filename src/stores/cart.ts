@@ -32,9 +32,23 @@ const clampQuantity = (quantity: number, inventory: number) =>
 const readItems = (): CartItem[] => {
   try {
     const stored = localStorage.getItem(storageKey);
-    return stored ? JSON.parse(stored) : [];
+    const items = stored ? JSON.parse(stored) : [];
+    return Array.isArray(items)
+      ? items.filter(
+          (item) =>
+            item &&
+            typeof item.lineId === "string" &&
+            typeof item.productId === "string" &&
+            Number.isSafeInteger(item.quantity) &&
+            item.quantity > 0 &&
+            Number.isSafeInteger(item.unitPrice) &&
+            item.unitPrice > 0 &&
+            item.selectedOptions &&
+            typeof item.selectedOptions === "object" &&
+            !Array.isArray(item.selectedOptions),
+        )
+      : [];
   } catch {
-    localStorage.removeItem(storageKey);
     return [];
   }
 };
@@ -52,7 +66,12 @@ export const useCartStore = defineStore("cart", {
   },
   actions: {
     persist() {
-      localStorage.setItem(storageKey, JSON.stringify(this.items));
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(this.items));
+        return true;
+      } catch {
+        return false; // 儲存不可用時仍可在目前頁面操作購物車。
+      }
     },
     addItem(
       product: Product,
@@ -94,27 +113,8 @@ export const useCartStore = defineStore("cart", {
       this.persist();
     },
     clearCart() {
-      try {
-        localStorage.setItem(storageKey, "[]");
-        this.items = [];
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    // 將購物車狀態還原為指定的快照，並更新 localStorage(結帳前備份，訂單失敗重回購物車)
-    restoreCart(snapshot: CartItem[]) {
-      const items = snapshot.map((item) => ({
-        ...item,
-        selectedOptions: { ...item.selectedOptions },
-      }));
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(items));
-        this.items = items;
-        return true;
-      } catch {
-        return false;
-      }
+      this.items = [];
+      return this.persist();
     },
   },
 });

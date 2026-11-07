@@ -1,20 +1,24 @@
-<!-- 驗證收件資料、建立模擬訂單、清空購物車 --結帳頁面 -->
+<!-- 驗證收件資料，收到訂單確認後才清空購物車。 -->
 <script setup lang="ts">
 import { nextTick, onMounted, reactive, ref } from "vue";
-import { isNavigationFailure, useRouter } from "vue-router";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
+import CheckoutLoginDialog from "../components/CheckoutLoginDialog.vue";
+import { isDemoUser } from "../services/authService";
+import { orderService, OrderSubmissionError } from "../services/orderService";
+import { useAuthStore } from "../stores/auth";
 import { useCartStore } from "../stores/cart";
 import {
-  createOrderNumber,
   type CheckoutDetails,
   type CheckoutErrors,
-  type OrderSnapshot,
   type PaymentMethod,
   validateCheckout,
 } from "../utils/checkout";
 import { formatCurrency } from "../utils/format";
 
 const cart = useCartStore();
+const auth = useAuthStore();
 const router = useRouter();
+const loginDialog = ref<InstanceType<typeof CheckoutLoginDialog> | null>(null);
 const details = reactive<CheckoutDetails>({
   name: "",
   email: "",
@@ -25,16 +29,59 @@ const details = reactive<CheckoutDetails>({
 const errors = ref<CheckoutErrors>({});
 const submitError = ref("");
 const submitting = ref(false);
+const confirmedOrder = ref("");
+const attemptKey = "curio-checkout-attempt";
+let attempt: { cartKey: string; id: string } | undefined;
 
 onMounted(() => {
-  if (!cart.items.length) router.replace("/cart");
+  if (!cart.items.length) void router.replace("/cart");
 });
 
-const submit = async () => {
-  if (submitting.value) return;
+// 等待確認期間留在結帳頁，避免切到購物車修改正在送出的商品。
+onBeforeRouteLeave(() => !submitting.value || !!confirmedOrder.value);
+
+function cartKey(memberId: string) {
+  return JSON.stringify([
+    memberId,
+    cart.items.map((line) => [line.lineId, line.quantity, line.unitPrice]),
+  ]);
+}
+
+function getRequestId(key: string) {
+  // 逾時不代表伺服器沒存到：同一會員、同一購物車重試時沿用 ID，不保存配送個資。
+  if (attempt?.cartKey === key) return attempt.id;
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(attemptKey) ?? "null");
+    if (
+      stored?.cartKey === key &&
+      typeof stored.id === "string" &&
+      /^[a-f0-9-]{36}$/i.test(stored.id)
+    ) {
+      attempt = { cartKey: key, id: stored.id };
+      return attempt.id;
+    }
+  } catch {
+    /* 儲存不可用時，這一頁仍會重用記憶體中的 ID。 */
+  }
+  attempt = { cartKey: key, id: crypto.randomUUID() };
+  try {
+    sessionStorage.setItem(attemptKey, JSON.stringify(attempt));
+  } catch {
+    /* 同上。 */
+  }
+  return attempt.id;
+}
+
+async function submit() {
+  if (submitting.value || confirmedOrder.value) return;
   submitError.value = "";
+  const member = auth.user;
+  if (!member) {
+    loginDialog.value?.show();
+    return;
+  }
   if (!cart.items.length) {
-    router.replace("/cart");
+    void router.replace("/cart");
     return;
   }
   errors.value = validateCheckout(details);
@@ -44,70 +91,65 @@ const submit = async () => {
     document.getElementById(firstInvalid)?.focus();
     return;
   }
-  submitting.value = true;
 
-  const cartSnapshot = cart.items.map((item) => ({
-    ...item,
-    selectedOptions: { ...item.selectedOptions },
-  }));
-  let previousOrder: string | null = null;
-  let orderStored = false;
-  let cartCleared = false;
+  submitting.value = true;
+  const key = cartKey(member.id);
   try {
-    const order: OrderSnapshot = {
-      orderNumber: createOrderNumber(),
-      items: cartSnapshot.map((item) => ({
-        lineId: item.lineId,
-        name: item.name,
-        image: item.image,
-        unitPrice: item.unitPrice,
-        quantity: item.quantity,
-        inventory: item.inventory,
-        selectedOptions: { ...item.selectedOptions },
-      })),
-      subtotal: cart.subtotal,
-      details: { ...details, payment: details.payment as PaymentMethod },
-    };
-    previousOrder = sessionStorage.getItem("curio-last-order");
-    sessionStorage.setItem("curio-last-order", JSON.stringify(order));
-    orderStored = true;
-    if (!cart.clearCart()) throw new Error("Unable to persist cart clear");
-    cartCleared = true;
-    const navigation = await router.push({
-      name: "order-success",
-      params: { orderNumber: order.orderNumber },
-    });
-    if (isNavigationFailure(navigation)) throw navigation;
-  } catch {
-    if (cartCleared) cart.restoreCart(cartSnapshot);
-    if (orderStored) {
+    const order = await orderService.submit(
+      member,
+      cart.items,
+      {
+        ...details,
+        payment: details.payment as PaymentMethod,
+      },
+      getRequestId(key),
+    );
+    // 只清除已確認的購物車。若請求期間商品或身分變更，保留新的內容。
+    if (auth.user?.id !== member.id) return;
+    confirmedOrder.value = order.orderNumber;
+    if (cartKey(member.id) === key && cart.clearCart()) {
       try {
-        if (previousOrder === null)
-          sessionStorage.removeItem("curio-last-order");
-        else sessionStorage.setItem("curio-last-order", previousOrder);
+        sessionStorage.removeItem(attemptKey);
       } catch {
-        // Best effort only when browser storage is unavailable.
+        /* 訂單已建立，不因此重送。 */
       }
     }
-    submitError.value = "無法建立訂單，請稍後再試。";
-    if (router.currentRoute.value.path !== "/checkout") {
-      try {
-        await router.replace("/checkout");
-      } catch {
-        // The visible error remains when checkout is still mounted.
-      }
+    if (router.currentRoute.value.name === "checkout") {
+      await router.replace({
+        name: "order-success",
+        params: { orderNumber: order.orderNumber },
+        query: { placed: "1" },
+      });
     }
+  } catch (error) {
+    if (confirmedOrder.value) return; // 導覽失敗時仍可開啟已確認的訂單。
+    if (error instanceof OrderSubmissionError && error.status === 401) {
+      auth.revision++;
+      auth.user = null;
+      loginDialog.value?.show();
+      return;
+    }
+    submitError.value =
+      error instanceof OrderSubmissionError
+        ? error.message
+        : "目前無法確認訂單是否送出，購物車已保留，請稍後重試。";
   } finally {
     submitting.value = false;
   }
-};
+}
 </script>
 
 <template>
   <main class="checkout-view">
     <div class="container">
       <header class="checkout-view__header">
-        <p>示範結帳，不會產生實際交易。</p>
+        <p>
+          {{
+            isDemoUser(auth.user)
+              ? "示範結帳，不會產生實際交易。"
+              : "結帳 · 目前不會線上扣款"
+          }}
+        </p>
         <h1>填寫收件資料</h1>
       </header>
 
@@ -123,6 +165,7 @@ const submit = async () => {
                   v-model="details.name"
                   name="name"
                   type="text"
+                  maxlength="50"
                   autocomplete="name"
                   :aria-describedby="errors.name ? 'name-error' : undefined"
                   :aria-invalid="Boolean(errors.name)"
@@ -138,6 +181,7 @@ const submit = async () => {
                   v-model="details.email"
                   name="email"
                   type="email"
+                  maxlength="254"
                   autocomplete="email"
                   :aria-describedby="errors.email ? 'email-error' : undefined"
                   :aria-invalid="Boolean(errors.email)"
@@ -153,6 +197,7 @@ const submit = async () => {
                   v-model="details.phone"
                   name="phone"
                   type="tel"
+                  maxlength="32"
                   autocomplete="tel"
                   :aria-describedby="errors.phone ? 'phone-error' : undefined"
                   :aria-invalid="Boolean(errors.phone)"
@@ -167,6 +212,7 @@ const submit = async () => {
                   id="address"
                   v-model="details.address"
                   name="address"
+                  maxlength="250"
                   rows="3"
                   autocomplete="street-address"
                   :aria-describedby="
@@ -226,8 +272,20 @@ const submit = async () => {
           <p v-if="submitError" class="checkout-form__alert" role="alert">
             {{ submitError }}
           </p>
-          <button type="submit" :disabled="submitting">
-            {{ submitting ? "建立訂單中…" : "送出模擬訂單" }}
+          <RouterLink v-if="submitError" to="/account/orders"
+            >查看訂單紀錄 →</RouterLink
+          >
+          <RouterLink
+            v-if="confirmedOrder"
+            :to="{
+              name: 'order-success',
+              params: { orderNumber: confirmedOrder },
+            }"
+          >
+            訂單已建立，查看明細
+          </RouterLink>
+          <button v-else type="submit" :disabled="submitting">
+            {{ submitting ? "建立訂單中…" : "送出訂單" }}
           </button>
         </form>
 
@@ -254,6 +312,7 @@ const submit = async () => {
         </aside>
       </div>
     </div>
+    <CheckoutLoginDialog ref="loginDialog" />
   </main>
 </template>
 

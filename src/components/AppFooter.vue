@@ -22,6 +22,7 @@
   align-content: center;
   gap: 0.5rem;
   padding-block: 2rem;
+  text-align: center;
 }
 p {
   margin: 0;
@@ -37,12 +38,16 @@ small {
 }
 @media (min-width: 48rem) {
   .site-footer__inner {
-    grid-template-columns: 1fr 2fr auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
     align-items: center;
     gap: 2rem;
   }
+  .site-footer__brand {
+    text-align: start;
+  }
   small {
     margin: 0;
+    text-align: end;
   }
 }
 </style>

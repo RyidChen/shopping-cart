@@ -1,36 +1,52 @@
-<!-- 驗證並顯示本次訂單摘要 -->
+<!-- 送單完成與歷史明細共用同一頁；只顯示會員能查到的訂單。 -->
 <script setup lang="ts">
-import { computed } from "vue";
+import { ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { readOrderSnapshot } from "../utils/checkout";
-import { formatCurrency } from "../utils/format";
+import { isDemoUser } from "../services/authService";
+import { orderService, type OrderRecord } from "../services/orderService";
+import { useAuthStore } from "../stores/auth";
+import { formatCurrency, formatOrderDate } from "../utils/format";
 
 const route = useRoute();
-const storedOrder = (() => {
-  try {
-    return readOrderSnapshot(sessionStorage.getItem("curio-last-order"));
-  } catch {
-    return null;
-  }
-})();
-const order = computed(() =>
-  storedOrder?.orderNumber === route.params.orderNumber ? storedOrder : null,
+const auth = useAuthStore();
+const order = ref<OrderRecord | null>(null);
+const loading = ref(false);
+watch(
+  [() => auth.user?.id, () => route.params.orderNumber],
+  async ([, number], _, onCleanup) => {
+    let current = true;
+    onCleanup(() => {
+      current = false;
+    });
+    order.value = null;
+    loading.value = !!auth.user;
+    const result =
+      typeof number === "string"
+        ? await orderService.get(auth.user, number)
+        : null;
+    if (current) {
+      order.value = result;
+      loading.value = false;
+    }
+  },
+  { immediate: true },
 );
 </script>
 
 <template>
   <main class="order-success">
     <div class="container">
+      <p v-if="loading" role="status">讀取訂單中…</p>
       <section
-        v-if="!order"
+        v-else-if="!order"
         class="order-success__safe-state"
         role="status"
         aria-live="polite"
       >
-        <p>訂單完成</p>
+        <p>訂單明細</p>
         <h1>無法取得訂單摘要</h1>
-        <p>這個訂單連結沒有對應的本次瀏覽資料，請從購物車重新開始。</p>
-        <RouterLink to="/cart">返回購物車</RouterLink>
+        <p>目前查不到這張訂單，請確認已登入原下單帳號，或稍後再試。</p>
+        <RouterLink to="/account/orders">返回訂單紀錄</RouterLink>
       </section>
 
       <section
@@ -38,17 +54,23 @@ const order = computed(() =>
         class="order-success__summary"
         aria-labelledby="order-success-title"
       >
-        <p>訂單已送出</p>
-        <h1 id="order-success-title">謝謝您的選購</h1>
+        <p>{{ route.query.placed === "1" ? "訂單已送出" : "訂單明細" }}</p>
+        <h1 id="order-success-title">
+          {{ route.query.placed === "1" ? "謝謝您的選購" : "購買明細" }}
+        </h1>
         <p>
-          示範訂單編號：
+          {{ isDemoUser(auth.user) ? "示範訂單編號：" : "訂單編號：" }}
           <strong>{{ order.orderNumber }}</strong>
+        </p>
+        <p>
+          {{ formatOrderDate(order.createdAt) }} ·
+          {{ order.payment === "cod" ? "貨到付款" : "模擬線上付款（未扣款）" }}
         </p>
         <div class="order-success__details">
           <section aria-labelledby="order-lines-title">
             <h2 id="order-lines-title">本次購買項目</h2>
             <ul>
-              <li v-for="line in order.items" :key="line.lineId">
+              <li v-for="(line, index) in order.items" :key="index">
                 <span>
                   <strong>{{ line.name }}</strong>
                   <small v-if="Object.keys(line.selectedOptions).length">
@@ -72,7 +94,7 @@ const order = computed(() =>
           </aside>
         </div>
         <nav aria-label="下一步">
-          <RouterLink to="/">返回首頁</RouterLink>
+          <RouterLink to="/account/orders">查看訂單紀錄</RouterLink>
           <RouterLink to="/products">繼續購物</RouterLink>
         </nav>
       </section>
@@ -115,6 +137,7 @@ h1 {
 .order-success__safe-state > p:not(:first-child) {
   margin: 0;
   color: var(--color-muted);
+  overflow-wrap: anywhere;
 }
 .order-success__details {
   display: grid;
