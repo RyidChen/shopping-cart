@@ -8,21 +8,24 @@ import {
   Lightbulb,
   VolumeX,
 } from "@lucide/vue";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import arcKeyboardHero from "../assets/products/arc-keyboard-hero.webp";
 import auraHeadphonesHero from "../assets/products/aura-headphones-hero.png";
 import haloLampHero from "../assets/products/halo-lamp-hero.webp";
 import ProductCard from "../components/ProductCard.vue";
 import ProductGridSkeleton from "../components/ProductGridSkeleton.vue";
-import { queryProducts } from "../services/productService";
+import {
+  getProductCategories,
+  queryProducts,
+} from "../services/productService";
 import type { Product } from "../types/commerce";
+import { formatCurrency } from "../utils/format";
 
 const heroSlides = [
   {
     slug: "aura-headphones",
     brand: "Aster",
     name: "Aura 無線耳機",
-    headline: "新品上市",
     description:
       "Aura 無線耳機採用包覆式耳罩，搭配降噪設計，適合通勤與日常聆聽。",
     image: auraHeadphonesHero,
@@ -35,7 +38,6 @@ const heroSlides = [
     slug: "halo-lamp",
     brand: "Luma",
     name: "Halo 桌燈",
-    headline: "居家精選",
     description: "Halo 環形桌燈提供暖白光，適合擺在床邊或工作桌。",
     image: haloLampHero,
     features: [
@@ -47,7 +49,6 @@ const heroSlides = [
     slug: "arc-keyboard",
     brand: "Aster",
     name: "Arc 機械鍵盤",
-    headline: "桌面選物",
     description: "Arc 機械鍵盤採用緊湊配置與靜音線性軸，搭配木質外框。",
     image: arcKeyboardHero,
     features: [
@@ -58,11 +59,14 @@ const heroSlides = [
 ];
 const activeSlide = ref(0);
 const announcedSlide = ref("");
+const heroHovered = ref(false);
+const heroFocused = ref(false);
 let rotationTimer: number | undefined;
 
-// 手動換頁後重新計時，讓選到的商品完整顯示 5 秒。
+// 滑鼠與鍵盤焦點都離開後，才重新計時完整的 5 秒。
 function startHeroRotation() {
   window.clearInterval(rotationTimer);
+  if (heroHovered.value || heroFocused.value) return;
   rotationTimer = window.setInterval(() => {
     activeSlide.value = (activeSlide.value + 1) % heroSlides.length;
   }, 5000);
@@ -70,6 +74,13 @@ function startHeroRotation() {
 
 onMounted(startHeroRotation);
 onUnmounted(() => window.clearInterval(rotationTimer));
+watch([heroHovered, heroFocused], startHeroRotation, { flush: "sync" });
+
+function onHeroFocusOut(event: FocusEvent) {
+  heroFocused.value =
+    event.relatedTarget instanceof Node &&
+    (event.currentTarget as HTMLElement).contains(event.relatedTarget);
+}
 
 function selectSlide(index: number) {
   activeSlide.value = index;
@@ -77,33 +88,48 @@ function selectSlide(index: number) {
   startHeroRotation();
 }
 
-const categories = [
-  { name: "3C", note: "讓每日使用更順手" },
-  { name: "居家", note: "留一個舒服的角落" },
-  { name: "服飾", note: "輕鬆穿出自己的節奏" },
-  { name: "美妝", note: "回到簡單有效的保養" },
-];
+const categories = ref<{ name: string; count: number }[]>([]);
 const products = ref<Product[]>([]);
 const loading = ref(true);
 const failed = ref(false);
-// 精選商品 只顯示前四件，避免首頁過長；最新上架則直接取前四件。
+// 首頁只保留一組精選商品，完整型錄由商品列表提供。
 const featured = computed(() =>
   products.value.filter((product) => product.featured).slice(0, 4),
 );
-const newest = computed(() => products.value.slice(0, 4));
+const deskSelections = [
+  { slug: "arc-keyboard", note: "木質外框搭配靜音線性軸，適合日常打字。" },
+  { slug: "halo-lamp", note: "暖白光，放在工作桌或床邊都合適。" },
+  { slug: "sono-speaker", note: "小巧的藍牙喇叭，讓音樂也有一個位置。" },
+];
+const deskProducts = computed(() =>
+  deskSelections.flatMap((selection) => {
+    const product = products.value.find((item) => item.slug === selection.slug);
+    return product ? [{ ...product, selectionNote: selection.note }] : [];
+  }),
+);
+const budgetProducts = computed(() =>
+  products.value
+    .filter((product) => product.price <= 2000 && product.inventory > 0)
+    .sort((a, b) => a.price - b.price)
+    .slice(0, 3),
+);
 
 async function loadProducts() {
   loading.value = true;
   failed.value = false;
   try {
-    const result = await queryProducts({
-      search: "",
-      category: "",
-      sort: "newest",
-      page: 1,
-      pageSize: 12,
-    });
+    const [result, categoryCounts] = await Promise.all([
+      queryProducts({
+        search: "",
+        category: "",
+        sort: "newest",
+        page: 1,
+        pageSize: 12,
+      }),
+      getProductCategories(),
+    ]);
     products.value = result.items;
+    categories.value = categoryCounts;
   } catch {
     failed.value = true;
   } finally {
@@ -120,6 +146,10 @@ loadProducts();
       class="home-hero"
       aria-labelledby="home-hero-heading"
       aria-roledescription="輪播"
+      @mouseenter="heroHovered = true"
+      @mouseleave="heroHovered = false"
+      @focusin="heroFocused = true"
+      @focusout="onHeroFocusOut"
     >
       <h1 id="home-hero-heading" class="sr-only">Curio 日常選物</h1>
       <div class="container home-hero__frame">
@@ -150,10 +180,8 @@ loadProducts();
             :aria-hidden="index !== activeSlide || undefined"
           >
             <div class="home-hero__content">
-              <p class="home-hero__eyebrow">
-                {{ slide.brand }} / {{ slide.name }}
-              </p>
-              <h2>{{ slide.headline }}</h2>
+              <h2>{{ slide.name }}</h2>
+              <p class="home-hero__brand">{{ slide.brand }}</p>
               <p class="home-hero__description">{{ slide.description }}</p>
               <ul class="home-hero__features">
                 <li v-for="feature in slide.features" :key="feature.text">
@@ -177,33 +205,6 @@ loadProducts();
               </div>
             </div>
             <div class="home-hero__visual">
-              <svg
-                class="home-hero__contours"
-                viewBox="0 0 640 480"
-                fill="none"
-                aria-hidden="true"
-              >
-                <g stroke="currentColor" stroke-width="1">
-                  <path d="M245-28C174 73 297 118 241 211S65 316 91 500" />
-                  <path
-                    d="M287-28C209 78 333 133 276 224S110 332 135 500"
-                    stroke-dasharray="5 9"
-                  />
-                  <path d="M332-28C248 91 372 150 311 241S156 345 182 500" />
-                  <path d="M382-28C285 104 409 165 345 257S208 354 229 500" />
-                  <path
-                    d="M441-28C339 95 451 177 384 274S258 371 281 500"
-                    stroke-dasharray="5 9"
-                  />
-                  <path d="M513-28C403 71 496 192 426 289S312 381 335 500" />
-                  <path d="M590-28C481 53 543 205 471 308S370 393 395 500" />
-                  <path
-                    d="M656 8C558 63 594 232 516 325S424 406 458 500"
-                    stroke-dasharray="5 9"
-                  />
-                  <path d="M659 101C610 147 631 260 563 343S492 421 518 500" />
-                </g>
-              </svg>
               <img
                 :src="slide.image"
                 :alt="slide.name"
@@ -214,7 +215,11 @@ loadProducts();
         </div>
       </div>
     </section>
-    <section class="home-section container" aria-labelledby="category-heading">
+    <section
+      v-if="categories.length"
+      class="home-section container"
+      aria-labelledby="category-heading"
+    >
       <div class="home-section__heading">
         <h2 id="category-heading">依分類逛逛</h2>
       </div>
@@ -225,7 +230,7 @@ loadProducts();
           :to="{ name: 'catalog', query: { category: category.name } }"
         >
           <strong>{{ category.name }}</strong>
-          <span>{{ category.note }}</span>
+          <span>{{ category.count }} 件</span>
         </RouterLink>
       </nav>
     </section>
@@ -249,22 +254,71 @@ loadProducts();
       </div>
     </section>
     <section
-      class="home-section home-section--sand"
-      aria-labelledby="new-heading"
+      v-if="!loading && !failed && deskProducts.length"
+      class="home-section home-desk"
+      aria-labelledby="desk-heading"
     >
-      <div class="container">
-        <div class="home-section__heading">
-          <h2 id="new-heading">最新上架</h2>
-        </div>
-        <div v-if="!loading && !failed" class="home-grid">
-          <!-- 最新上架商品 -->
-          <ProductCard
-            v-for="product in newest"
+      <div class="container home-desk__layout">
+        <header class="home-section__heading">
+          <h2 id="desk-heading">工作桌上的選物</h2>
+          <p class="home-section__intro">鍵盤、照明與音樂，各自留一個位置。</p>
+        </header>
+        <div class="home-desk__picks">
+          <RouterLink
+            v-for="product in deskProducts"
             :key="product.id"
-            :product="product"
-          />
+            class="desk-pick"
+            :to="{ name: 'product', params: { slug: product.slug } }"
+          >
+            <img
+              class="desk-pick__image"
+              :src="product.images[0]"
+              :alt="product.name"
+              loading="lazy"
+              width="800"
+              height="1000"
+            />
+            <div class="desk-pick__details">
+              <h3>{{ product.name }}</h3>
+              <p>{{ product.selectionNote }}</p>
+              <strong>{{ formatCurrency(product.price) }}</strong>
+            </div>
+          </RouterLink>
         </div>
       </div>
+    </section>
+    <section
+      v-if="!loading && !failed && budgetProducts.length"
+      class="home-section home-budget container"
+      aria-labelledby="budget-heading"
+    >
+      <header class="home-section__heading home-budget__heading">
+        <h2 id="budget-heading">NT$2,000 以內</h2>
+        <RouterLink
+          class="home-budget__all"
+          :to="{ name: 'catalog', query: { max: '2000' } }"
+          aria-label="查看全部 NT$2,000 以內商品"
+        >
+          查看全部
+        </RouterLink>
+      </header>
+      <ul class="home-budget__items">
+        <li v-for="product in budgetProducts" :key="product.id">
+          <RouterLink :to="{ name: 'product', params: { slug: product.slug } }">
+            <img
+              :src="product.images[0]"
+              :alt="product.name"
+              loading="lazy"
+              width="160"
+              height="160"
+            />
+            <div>
+              <h3>{{ product.name }}</h3>
+              <strong>{{ formatCurrency(product.price) }}</strong>
+            </div>
+          </RouterLink>
+        </li>
+      </ul>
     </section>
   </main>
 </template>
@@ -304,13 +358,10 @@ loadProducts();
   visibility: visible;
   transform: none;
 }
-.home-hero__eyebrow {
-  margin: 0 0 0.85rem;
+.home-hero__brand {
+  margin: 0.65rem 0 0;
   color: var(--color-muted);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  font-size: 0.875rem;
 }
 h2 {
   margin: 0;
@@ -318,10 +369,13 @@ h2 {
 }
 .home-hero__content h2 {
   font-family: var(--font-body);
-  font-size: clamp(1.75rem, 4.55vw, 3.75rem);
+  font-size: clamp(1.75rem, 4.55vw, 3.25rem);
   font-weight: 750;
   line-height: 1.18;
   letter-spacing: -0.035em;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 .home-hero__description {
   max-width: 26rem;
@@ -378,21 +432,9 @@ h2 {
   opacity: 0.8;
 }
 .home-hero__visual {
-  position: relative;
-  isolation: isolate;
   display: grid;
   place-items: center;
   min-width: 0;
-}
-.home-hero__contours {
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  color: var(--color-muted);
-  opacity: 0.23;
-  mask-image: radial-gradient(ellipse, #000 35%, transparent 75%);
 }
 .home-hero__visual img {
   width: min(100%, 31rem);
@@ -437,11 +479,105 @@ h2 {
 .home-section {
   padding-block: clamp(2.5rem, 6vw, 4rem);
 }
-.home-section--sand {
-  background: var(--color-sand);
-}
 .home-section__heading {
   margin-bottom: 1.4rem;
+}
+.home-section__intro {
+  margin: 0.65rem 0 0;
+  color: var(--color-muted);
+}
+.home-desk {
+  background: var(--color-sand);
+}
+.home-desk__picks {
+  display: grid;
+}
+.desk-pick {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-muted) 25%, transparent);
+  border-radius: var(--radius-sm);
+  padding-block: 1.25rem;
+}
+.desk-pick__image {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.desk-pick h3,
+.home-budget h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+.desk-pick__details p {
+  margin: 0.5rem 0 0.75rem;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+.desk-pick strong,
+.home-budget strong {
+  display: block;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+.desk-pick:hover h3,
+.home-budget__items a:hover h3 {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.home-budget__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+}
+.home-budget__all {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+.home-budget__all:hover {
+  color: var(--color-muted);
+}
+.home-budget__items {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.home-budget__items li {
+  min-width: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1rem;
+}
+.home-budget__items a {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  border-radius: var(--radius-sm);
+}
+.home-budget__items img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.home-budget strong {
+  margin-top: 0.5rem;
 }
 h2 {
   font-size: clamp(1.5rem, 3vw, 2rem);
@@ -454,28 +590,28 @@ h2 {
   gap: 1rem;
 }
 .home-categories a {
-  display: grid;
-  min-height: 8.5rem;
-  align-content: space-between;
+  display: flex;
+  min-height: 5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   padding: 1rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
-  transition:
-    transform var(--transition),
-    box-shadow var(--transition);
+  transition: border-color var(--transition);
 }
 .home-categories a:hover {
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-2px);
+  border-color: var(--color-muted);
 }
 .home-categories strong {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
 }
 .home-categories span {
   color: var(--color-muted);
   font-size: 0.82rem;
+  white-space: nowrap;
 }
 .home-message {
   display: grid;
@@ -494,6 +630,37 @@ h2 {
   margin-top: 0.3rem;
 }
 @media (min-width: 48rem) {
+  .home-desk__layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 2.1fr);
+    align-items: start;
+    gap: 2.5rem;
+  }
+  .home-desk .home-section__heading {
+    margin: 1.25rem 0 0;
+  }
+  .desk-pick__details {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 1rem;
+  }
+  .desk-pick__details p {
+    grid-column: 1;
+    margin: 0;
+  }
+  .desk-pick__details strong {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    white-space: nowrap;
+  }
+  .home-budget__items {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+  .home-budget__items a {
+    grid-template-columns: 4rem minmax(0, 1fr);
+  }
   .home-hero__frame {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "slides controls";
@@ -509,11 +676,15 @@ h2 {
   .home-categories {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .home-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 @media (min-width: 64rem) {
+  .desk-pick {
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+  .home-budget__items a {
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+  }
   .home-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -521,9 +692,6 @@ h2 {
 @media (prefers-reduced-motion: reduce) {
   .home-hero__layout {
     transition: none;
-  }
-  .home-categories a:hover {
-    transform: none;
   }
 }
 </style>

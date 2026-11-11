@@ -92,9 +92,8 @@ async function logout() {
       <div class="account-content">
         <section class="account-welcome" aria-labelledby="account-title">
           <div>
-            <p class="account-eyebrow">MY ACCOUNT</p>
             <h2 id="account-title">你好，{{ auth.user.name }}</h2>
-            <p>歡迎回到 Curio，為日常找到更多喜歡。</p>
+            <p>在這裡查看會員資料，或前往訂單紀錄。</p>
           </div>
           <RouterLink class="account-shop" to="/products">
             探索精選商品 <ArrowRight :size="17" aria-hidden="true" />
@@ -265,13 +264,6 @@ h2 {
   border-radius: var(--radius-md);
   padding: clamp(1.25rem, 3vw, 2rem);
   background: var(--color-sand);
-}
-.account-eyebrow {
-  margin: 0 0 0.6rem;
-  color: var(--color-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.13em;
 }
 .account-welcome h2 + p {
   margin: 0.65rem 0 0;

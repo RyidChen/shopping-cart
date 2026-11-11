@@ -13,6 +13,17 @@ export async function queryProducts(
   return applyCatalogQuery(products, filters);
 }
 
+// 分類件數統計整份上架型錄，不受商品列表的分頁大小影響。
+export async function getProductCategories() {
+  await wait();
+  const counts = new Map<string, number>();
+  for (const product of products) {
+    if (!product.active) continue;
+    counts.set(product.category, (counts.get(product.category) ?? 0) + 1);
+  }
+  return Array.from(counts, ([name, count]) => ({ name, count }));
+}
+
 // 依照 slug 查詢單一商品，若不存在或未上架則回傳 null  模擬取得詳情頁
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   await wait();

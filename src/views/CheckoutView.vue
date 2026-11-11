@@ -143,6 +143,7 @@ async function submit() {
   <main class="checkout-view">
     <div class="container">
       <header class="checkout-view__header">
+        <h1>填寫收件資料</h1>
         <p>
           {{
             isDemoUser(auth.user)
@@ -150,7 +151,6 @@ async function submit() {
               : "結帳 · 目前不會線上扣款"
           }}
         </p>
-        <h1>填寫收件資料</h1>
       </header>
 
       <div class="checkout-view__layout">
@@ -324,12 +324,9 @@ async function submit() {
   margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
 }
 .checkout-view__header p {
-  margin: 0;
+  margin: 0.75rem 0 0;
   color: var(--color-muted);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 0.875rem;
 }
 h1,
 h2,
@@ -378,7 +375,7 @@ legend {
 .field textarea {
   width: 100%;
   min-height: 44px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-field-border);
   border-radius: var(--radius-sm);
   padding: 0.65rem 0.75rem;
   color: var(--color-ink);

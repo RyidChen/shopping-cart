@@ -134,10 +134,10 @@ watch(() => route.params.slug, loadProduct, { immediate: true });
       </section>
 
       <section class="product-view__details">
-        <p class="product-view__eyebrow">
-          {{ product.brand }} · {{ product.category }}
-        </p>
         <h1>{{ product.name }}</h1>
+        <p class="product-view__brand">
+          {{ product.brand }} / {{ product.category }}
+        </p>
         <p class="product-view__price">{{ formatCurrency(product.price) }}</p>
         <p v-if="product.compareAtPrice" class="product-view__compare">
           原價 {{ formatCurrency(product.compareAtPrice) }}
@@ -305,14 +305,12 @@ h1 {
 .product-view__details {
   min-width: 0;
 }
-.product-view__eyebrow,
+.product-view__brand,
 .product-view__compare {
   margin: 0;
   color: var(--color-muted);
   font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 500;
 }
 h1 {
   margin: 0.35rem 0 1rem;
@@ -320,7 +318,7 @@ h1 {
   line-height: 1.05;
 }
 .product-view__price {
-  margin: 0;
+  margin: 1rem 0 0;
   font-size: 1.35rem;
   font-weight: 700;
 }
@@ -388,7 +386,7 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-field-border);
   border-radius: var(--radius-sm);
   padding: 0.5rem 0.75rem;
   background: var(--color-surface);

@@ -56,7 +56,7 @@ const update = (value: number) => {
   display: inline-grid;
   grid-template-columns: 2.75rem 3rem 2.75rem;
   align-items: stretch;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-field-border);
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--color-surface);
@@ -83,7 +83,7 @@ button:disabled {
   opacity: 0.35;
 }
 input {
-  border-inline: 1px solid var(--color-border);
+  border-inline: 1px solid var(--color-field-border);
   font-variant-numeric: tabular-nums;
 }
 input::-webkit-inner-spin-button,

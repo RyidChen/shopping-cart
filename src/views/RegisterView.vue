@@ -1,6 +1,6 @@
 <!-- 註冊頁只處理表單；API、欄位錯誤與 loading 統一由 auth store／service 管理。 -->
 <script setup lang="ts">
-import { ArrowRight, CheckCircle2, Eye, EyeOff } from "@lucide/vue";
+import { CheckCircle2, Eye, EyeOff } from "@lucide/vue";
 import { computed, nextTick, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 import BaseButton from "../components/BaseButton.vue";
@@ -68,22 +68,21 @@ async function submit() {
 <template>
   <main class="auth-view container">
     <section class="auth-intro" aria-labelledby="register-title">
-      <p class="auth-intro__eyebrow">CURIO MEMBERS</p>
       <h1 id="register-title">
-        {{ registered ? "歡迎加入。" : "一起收藏日常。" }}
+        {{ registered ? "註冊完成" : "建立帳號" }}
       </h1>
       <p class="auth-intro__description">
-        建立你的 Curio 帳號，<br />從喜歡的好物開始。
+        建立帳號後，即可登入結帳及查詢訂單。
       </p>
       <RouterLink class="auth-intro__link" to="/products">
-        先逛逛精選商品 <ArrowRight :size="18" aria-hidden="true" />
+        瀏覽商品
       </RouterLink>
     </section>
 
     <section class="auth-card" aria-labelledby="register-form-title">
       <header>
         <h2 id="register-form-title">
-          {{ registered ? "註冊完成" : "建立會員帳號" }}
+          {{ registered ? "帳號已建立" : "註冊資料" }}
         </h2>
         <p>
           {{
@@ -105,7 +104,7 @@ async function submit() {
         <p>註冊成功！</p>
         <p>請使用剛才建立的電子郵件與密碼登入。</p>
         <RouterLink class="auth-intro__link" :to="loginTarget">
-          前往登入 <ArrowRight :size="18" aria-hidden="true" />
+          前往登入
         </RouterLink>
       </div>
 
@@ -234,7 +233,6 @@ async function submit() {
             </p>
             <BaseButton type="submit" :loading="submitting">
               {{ submitting ? "建立帳號中…" : "建立帳號" }}
-              <ArrowRight v-if="!submitting" :size="17" aria-hidden="true" />
             </BaseButton>
           </fieldset>
         </form>

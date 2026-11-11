@@ -2,7 +2,7 @@
 <template>
   <main class="not-found">
     <section class="not-found__content">
-      <p>404 / page not found</p>
+      <p>404</p>
       <h1>找不到這個頁面</h1>
       <span>網址可能有誤，或頁面已移除。您可以返回首頁，或繼續瀏覽商品。</span>
       <nav aria-label="404 導覽">
@@ -31,10 +31,7 @@
 p {
   margin: 0;
   color: var(--color-muted);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 0.875rem;
 }
 h1 {
   margin: 0.5rem 0 1rem;

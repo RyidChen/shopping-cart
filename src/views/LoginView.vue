@@ -1,6 +1,6 @@
 <!-- 登入頁只負責輸入、提示與導覽；帳密驗證及狀態保存由 auth store／service 處理。 -->
 <script setup lang="ts">
-import { Eye, EyeOff, ArrowRight } from "@lucide/vue";
+import { Eye, EyeOff } from "@lucide/vue";
 import { nextTick, reactive, ref } from "vue";
 import { isNavigationFailure, useRoute, useRouter } from "vue-router";
 import BaseButton from "../components/BaseButton.vue";
@@ -62,20 +62,17 @@ async function submit() {
 <template>
   <main class="auth-view container">
     <section class="auth-intro" aria-labelledby="login-title">
-      <p class="auth-intro__eyebrow">CURIO MEMBERS</p>
-      <h1 id="login-title">歡迎回來。</h1>
-      <p class="auth-intro__description">
-        從一件喜歡的好物，<br />開始更有質感的日常。
-      </p>
+      <h1 id="login-title">會員登入</h1>
+      <p class="auth-intro__description">登入後可結帳及查詢訂單紀錄。</p>
       <RouterLink class="auth-intro__link" to="/products">
-        先逛逛精選商品 <ArrowRight :size="18" aria-hidden="true" />
+        瀏覽商品
       </RouterLink>
       <p class="auth-intro__note">可使用頁面提供的示範帳號體驗購物。</p>
     </section>
 
     <section class="auth-card" aria-labelledby="login-form-title">
       <header>
-        <h2 id="login-form-title">會員登入</h2>
+        <h2 id="login-form-title">登入資料</h2>
         <p>使用電子郵件與密碼登入你的帳號。</p>
       </header>
       <form novalidate :aria-busy="submitting" @submit.prevent="submit">
@@ -148,7 +145,6 @@ async function submit() {
           </p>
           <BaseButton id="login-submit" type="submit" :loading="submitting">
             {{ submitting ? "登入中…" : "登入" }}
-            <ArrowRight v-if="!submitting" :size="17" aria-hidden="true" />
           </BaseButton>
         </fieldset>
       </form>

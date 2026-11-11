@@ -94,7 +94,7 @@ select {
   width: 100%;
   min-height: 44px;
   padding: 0.55rem 0.7rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-field-border);
   border-radius: var(--radius-sm);
   color: var(--color-ink);
   background: var(--color-surface);

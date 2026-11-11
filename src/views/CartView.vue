@@ -27,7 +27,6 @@ function checkout() {
   <main class="cart-view">
     <div class="container">
       <header class="cart-view__header">
-        <p>您的選購</p>
         <h1>購物車</h1>
       </header>
 
@@ -116,14 +115,6 @@ function checkout() {
 }
 .cart-view__header {
   margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
-}
-.cart-view__header p {
-  margin: 0;
-  color: var(--color-muted);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 h1,
 h2 {

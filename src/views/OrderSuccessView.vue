@@ -43,7 +43,6 @@ watch(
         role="status"
         aria-live="polite"
       >
-        <p>訂單明細</p>
         <h1>無法取得訂單摘要</h1>
         <p>目前查不到這張訂單，請確認已登入原下單帳號，或稍後再試。</p>
         <RouterLink to="/account/orders">返回訂單紀錄</RouterLink>
@@ -54,9 +53,8 @@ watch(
         class="order-success__summary"
         aria-labelledby="order-success-title"
       >
-        <p>{{ route.query.placed === "1" ? "訂單已送出" : "訂單明細" }}</p>
         <h1 id="order-success-title">
-          {{ route.query.placed === "1" ? "謝謝您的選購" : "購買明細" }}
+          {{ route.query.placed === "1" ? "訂單已送出" : "訂單明細" }}
         </h1>
         <p>
           {{ isDemoUser(auth.user) ? "示範訂單編號：" : "訂單編號：" }}
@@ -115,15 +113,6 @@ watch(
   padding: clamp(1.5rem, 5vw, 3rem);
   background: var(--color-surface);
 }
-.order-success__summary > p:first-child,
-.order-success__safe-state > p:first-child {
-  margin: 0;
-  color: var(--color-success);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 h1,
 h2 {
   font-family: var(--font-display);
@@ -133,8 +122,8 @@ h1 {
   font-size: clamp(1.75rem, 5vw, 3rem);
   line-height: 1.3;
 }
-.order-success__summary > p:not(:first-child),
-.order-success__safe-state > p:not(:first-child) {
+.order-success__summary > p,
+.order-success__safe-state > p {
   margin: 0;
   color: var(--color-muted);
   overflow-wrap: anywhere;
